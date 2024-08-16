@@ -1,10 +1,20 @@
 import cv2
 import numpy as np
-from PIL import Image  # Add this line to import Image from PIL
+from PIL import Image
 from pycoral.adapters import common
 from pycoral.adapters import segment
 from pycoral.utils.edgetpu import make_interpreter
 
+
+
+# List of category labels for the PASCAL VOC 2012 dataset
+LABELS = [
+    "background", "aeroplane", "bicycle", "bird", "boat",
+    "bottle", "bus", "car", "cat", "chair",
+    "cow", "diningtable", "dog", "horse", "motorbike",
+    "person", "pottedplant", "sheep", "sofa", "train",
+    "tvmonitor"
+]
 
 
 def create_pascal_label_colormap():
@@ -81,8 +91,37 @@ def mask_frame(frame, interpreter, keep_aspect_ratio=False):
     # Convert back to RGB
     combined = cv2.cvtColor(combined, cv2.COLOR_RGBA2RGB)
 
+    # Add labels
+    labeled_frame = add_labels(combined, result)
+
     # Return the result as a numpy array
-    return combined
+    return labeled_frame
+
+
+def add_labels(image, segmentation_result):
+    """
+    Add labels to the detected objects on the image.
+    """
+    unique_labels = np.unique(segmentation_result)
+
+    for label in unique_labels:
+        if label == 0:  # Skip the background
+            continue
+        
+        # Get the mask for the current label
+        mask = segmentation_result == label
+        
+        # Calculate the centroid of the mask
+        y_coords, x_coords = np.where(mask)
+        centroid_x = int(np.mean(x_coords))
+        centroid_y = int(np.mean(y_coords))
+        
+        # Draw the label on the image
+        label_name = LABELS[label]
+        cv2.putText(image, label_name, (centroid_x, centroid_y), 
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2, cv2.LINE_AA)
+    
+    return image
 
 
 def run_webcam_segmentation(model_path):
@@ -119,7 +158,6 @@ def run_webcam_segmentation(model_path):
     # When everything done, release the capture
     cap.release()
     cv2.destroyAllWindows()
-
 
 
 if __name__ == '__main__':

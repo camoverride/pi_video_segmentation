@@ -2,20 +2,21 @@
 
 ## Install
 
+- Must use old version of Raspbian (Bullseye or Buster)
+- Must use Python 3.8
+- Must have good power source
+
 - `python -m venv --system-site-packages .venv` (for pi Camera)
 - `source .venv/bin/activate`
 - `python stream_masks.py`
 
 
+## Notes
 
-Notes:
-  - Must use old version of Raspbian (Bullseye or Buster)
-  - Must use Python 3.8
-  - Must install some annoying dependencies
-  - Must have good power source
-  - Models must be speficially compiled for TPU, and maybe also Raspbian(?)
+- Force the monitor to turn on: `xset dpms force on`
 
-TODO:
-  - get command line segmentation model running
-  - get single frame segmentation
-  - segment video stream
+
+## TODO's
+
+- Compile TF -> TFLite models for the TPU
+- Get labels on detected objects
