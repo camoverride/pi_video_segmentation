@@ -10,7 +10,7 @@ interpreter = make_interpreter(model_path)
 interpreter.allocate_tensors()
 
 # Load the input image
-input_image_path = '/mnt/data/Screenshot 2024-08-15 at 7.30.36 PM.png'
+input_image_path = 'cam_rgb.jpg'
 image = Image.open(input_image_path)
 _, scale = common.set_resized_input(interpreter, image.size, lambda size: image.resize(size))
 
@@ -45,7 +45,7 @@ for obj in result:
 output_image = Image.alpha_composite(image.convert("RGBA"), overlay)
 
 # Save the output image
-output_image_path = '/mnt/data/segmentation_result.png'
+output_image_path = 'segmentation_result.png'
 output_image.save(output_image_path)
 
 print(f"Segmentation result saved at {output_image_path}")
