@@ -1,11 +1,12 @@
 import cv2
 import numpy as np
 from PIL import Image
-from collections import deque
 from pycoral.adapters import common
 from pycoral.adapters import segment
 from pycoral.utils.edgetpu import make_interpreter
 from screeninfo import get_monitors
+
+
 
 # List of category labels for the PASCAL VOC 2012 dataset
 LABELS = [
@@ -15,6 +16,7 @@ LABELS = [
     "person", "pottedplant", "sheep", "sofa", "train",
     "tvmonitor"
 ]
+
 
 def create_pascal_label_colormap():
     """
@@ -46,10 +48,10 @@ def label_to_color_image(label):
     return colormap[label]
 
 
-def mask_frame(frame, interpreter, selected_labels, mask_history=None, history_length=5):
+def mask_frame(frame, interpreter, selected_labels, keep_aspect_ratio=False):
     """
     Apply semantic segmentation on the input frame, filter by selected labels,
-    size up the mask to match the original frame, and overlay the mask with majority voting.
+    size up the mask to match the original frame, and overlay the mask.
     """
     original_height, original_width = frame.shape[:2]
     width, height = common.input_size(interpreter)
@@ -75,19 +77,7 @@ def mask_frame(frame, interpreter, selected_labels, mask_history=None, history_l
 
     # Size up the mask to match the original frame dimensions
     mask_img = cv2.resize(filtered_result, (original_width, original_height), interpolation=cv2.INTER_NEAREST)
-    
-    # Initialize mask history queue if not already done
-    if mask_history is None:
-        mask_history = deque(maxlen=history_length)
-
-    # Add the current mask to the history
-    mask_history.append(mask_img)
-
-    # Perform majority voting across the history of masks
-    stacked_masks = np.stack(mask_history, axis=-1)
-    majority_mask = np.apply_along_axis(lambda x: np.bincount(x).argmax(), axis=-1, arr=stacked_masks)
-
-    color_mask = create_pascal_label_colormap()[majority_mask]
+    color_mask = create_pascal_label_colormap()[mask_img]
 
     # Convert the mask to RGBA and apply transparency
     color_mask = cv2.cvtColor(color_mask.astype(np.uint8), cv2.COLOR_RGB2RGBA)
@@ -103,9 +93,10 @@ def mask_frame(frame, interpreter, selected_labels, mask_history=None, history_l
     combined = cv2.cvtColor(combined, cv2.COLOR_RGBA2RGB)
 
     # Add labels
-    labeled_frame = add_labels(combined, majority_mask)
+    labeled_frame = add_labels(combined, mask_img)
 
-    return labeled_frame, mask_history  # Return the updated mask history
+    # Return the result as a numpy array
+    return labeled_frame
 
 
 def add_labels(image, segmentation_result):
@@ -161,16 +152,14 @@ def run_webcam_segmentation(model_path, categories):
     cv2.namedWindow("Semantic Segmentation", cv2.WND_PROP_FULLSCREEN)
     cv2.setWindowProperty("Semantic Segmentation", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 
-    mask_history = None
-
     while True:
         ret, frame = cap.read()
         if not ret:
             print("Error: Failed to capture image.")
             break
 
-        # Apply mask to the current frame with majority voting for smoothing
-        masked_frame, mask_history = mask_frame(frame, interpreter, selected_labels, mask_history)
+        # Apply mask to the current frame
+        masked_frame = mask_frame(frame, interpreter, selected_labels)
 
         # Resize the output frame to fill the screen
         resized_frame = cv2.resize(masked_frame, (screen_width, screen_height))
