@@ -179,5 +179,12 @@ def run_webcam_segmentation(model_path, categories):
 if __name__ == '__main__':
     model_path = 'deeplabv3_mnv2_dm05_pascal_quant_edgetpu.tflite'
     categories = ["cat", "dog", "person"]
+    categories = [
+    "background", "aeroplane", "bicycle", "bird", "boat",
+    "bottle", "bus", "car", "cat", "chair",
+    "cow", "diningtable", "dog", "horse", "motorbike",
+    "person", "pottedplant", "sheep", "sofa", "train",
+    "tvmonitor"
+]
 
     run_webcam_segmentation(model_path, categories)
