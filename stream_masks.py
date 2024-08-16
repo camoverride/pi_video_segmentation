@@ -74,9 +74,15 @@ def mask_frame(frame, interpreter, keep_aspect_ratio=False):
     new_width, new_height = resized_img.size
     result = result[:new_height, :new_width]
 
-    # Convert the mask to RGB and set the desired color
+    # Create a colormap for unique colors
+    colormap = create_pascal_label_colormap()
+
+    # Create a mask image with different colors for each label
     mask_img = np.zeros((new_height, new_width, 3), dtype=np.uint8)
-    mask_img[result != 0] = [255, 0, 0]  # Set to red where the mask is present
+    for label in np.unique(result):
+        if label == 0:  # Skip the background
+            continue
+        mask_img[result == label] = colormap[label]
 
     # Convert the mask to RGBA and apply transparency
     mask_img = cv2.cvtColor(mask_img, cv2.COLOR_RGB2RGBA)
