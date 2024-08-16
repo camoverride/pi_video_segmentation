@@ -1,9 +1,8 @@
-from PIL import Image
+import cv2
 import numpy as np
 from pycoral.adapters import common
 from pycoral.adapters import segment
 from pycoral.utils.edgetpu import make_interpreter
-import cv2
 
 def create_pascal_label_colormap():
     """Creates a label colormap used in PASCAL VOC segmentation benchmark."""
@@ -29,15 +28,12 @@ def label_to_color_image(label):
 
     return colormap[label]
 
-def mask_frame(image, model_path, keep_aspect_ratio=False):
-    """Apply semantic segmentation on the input image and overlay the mask."""
-    # Load the model
-    interpreter = make_interpreter(model_path)
-    interpreter.allocate_tensors()
+def mask_frame(frame, interpreter, keep_aspect_ratio=False):
+    """Apply semantic segmentation on the input frame and overlay the mask."""
     width, height = common.input_size(interpreter)
 
-    # Resize the input image
-    img = Image.fromarray(image)
+    # Resize the input frame
+    img = Image.fromarray(frame)
     if keep_aspect_ratio:
         resized_img, _ = common.set_resized_input(
             interpreter, img.size, lambda size: img.resize(size, Image.LANCZOS))
@@ -77,10 +73,39 @@ def mask_frame(image, model_path, keep_aspect_ratio=False):
     # Return the result as a numpy array
     return combined
 
-# Example usage
-if __name__ == '__main__':
-    input_image = cv2.imread('cam_rgb.jpg')
-    model_path = 'deeplabv3_mnv2_dm05_pascal_quant_edgetpu.tflite'
+def run_webcam_segmentation(model_path):
+    """Capture frames from the webcam, apply the mask, and display the output."""
+    # Load the model
+    interpreter = make_interpreter(model_path)
+    interpreter.allocate_tensors()
 
-    output_image = mask_frame(input_image, model_path, keep_aspect_ratio=True)
-    cv2.imwrite('output.jpg', output_image)
+    # Open the webcam
+    cap = cv2.VideoCapture(0)
+
+    if not cap.isOpened():
+        print("Error: Could not open webcam.")
+        return
+
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            print("Error: Failed to capture image.")
+            break
+
+        # Apply mask to the current frame
+        masked_frame = mask_frame(frame, interpreter)
+
+        # Display the resulting frame
+        cv2.imshow('Semantic Segmentation', masked_frame)
+
+        # Press 'q' to exit the loop
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
+    # When everything done, release the capture
+    cap.release()
+    cv2.destroyAllWindows()
+
+if __name__ == '__main__':
+    model_path = 'deeplabv3_mnv2_dm05_pascal_quant_edgetpu.tflite'
+    run_webcam_segmentation(model_path)
