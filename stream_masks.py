@@ -47,9 +47,10 @@ def label_to_color_image(label):
     return colormap[label]
 
 
-def mask_frame(frame, interpreter, keep_aspect_ratio=False):
+def mask_frame(frame, interpreter, selected_labels, keep_aspect_ratio=False):
     """
-    Apply semantic segmentation on the input frame and overlay the mask.
+    Apply semantic segmentation on the input frame, filter by selected labels,
+    and overlay the mask.
     """
     width, height = common.input_size(interpreter)
 
@@ -74,18 +75,18 @@ def mask_frame(frame, interpreter, keep_aspect_ratio=False):
     new_width, new_height = resized_img.size
     result = result[:new_height, :new_width]
 
-    # Create a colormap for unique colors
-    colormap = create_pascal_label_colormap()
+    # Filter the segmentation result to only include selected labels
+    filtered_result = np.zeros_like(result)
+    for label_name in selected_labels:
+        label_index = LABELS.index(label_name)
+        filtered_result[result == label_index] = label_index
 
-    # Create a mask image with different colors for each label
-    mask_img = np.zeros((new_height, new_width, 3), dtype=np.uint8)
-    for label in np.unique(result):
-        if label == 0:  # Skip the background
-            continue
-        mask_img[result == label] = colormap[label]
+    # Create the mask image using the colormap
+    colormap = create_pascal_label_colormap()
+    mask_img = colormap[filtered_result]
 
     # Convert the mask to RGBA and apply transparency
-    mask_img = cv2.cvtColor(mask_img, cv2.COLOR_RGB2RGBA)
+    mask_img = cv2.cvtColor(mask_img.astype(np.uint8), cv2.COLOR_RGB2RGBA)
     mask_img[:, :, 3] = 128  # Set transparency to 50%
 
     # Convert the resized input image to RGBA
@@ -98,7 +99,7 @@ def mask_frame(frame, interpreter, keep_aspect_ratio=False):
     combined = cv2.cvtColor(combined, cv2.COLOR_RGBA2RGB)
 
     # Add labels
-    labeled_frame = add_labels(combined, result)
+    labeled_frame = add_labels(combined, filtered_result)
 
     # Return the result as a numpy array
     return labeled_frame
@@ -130,10 +131,13 @@ def add_labels(image, segmentation_result):
     return image
 
 
-def run_webcam_segmentation(model_path):
+def run_webcam_segmentation(model_path, categories):
     """
     Capture frames from the webcam, apply the mask, and display the output.
     """
+    # Convert the categories to their corresponding label indices
+    selected_labels = [label for label in categories if label in LABELS]
+
     # Load the model
     interpreter = make_interpreter(model_path)
     interpreter.allocate_tensors()
@@ -152,7 +156,7 @@ def run_webcam_segmentation(model_path):
             break
 
         # Apply mask to the current frame
-        masked_frame = mask_frame(frame, interpreter)
+        masked_frame = mask_frame(frame, interpreter, selected_labels)
 
         # Display the resulting frame
         cv2.imshow('Semantic Segmentation', masked_frame)
@@ -168,5 +172,6 @@ def run_webcam_segmentation(model_path):
 
 if __name__ == '__main__':
     model_path = 'deeplabv3_mnv2_dm05_pascal_quant_edgetpu.tflite'
+    categories = ["cat", "dog", "person"]
 
-    run_webcam_segmentation(model_path)
+    run_webcam_segmentation(model_path, categories)
