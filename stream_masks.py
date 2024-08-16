@@ -155,8 +155,9 @@ def run_webcam_segmentation(model_path, categories):
     screen_width = monitor.width
     screen_height = monitor.height
 
-    # Create a named window with normal flags to resize later
-    cv2.namedWindow("Semantic Segmentation", cv2.WINDOW_NORMAL)
+    # Create a named window in fullscreen mode
+    cv2.namedWindow("Semantic Segmentation", cv2.WND_PROP_FULLSCREEN)
+    cv2.setWindowProperty("Semantic Segmentation", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 
     while True:
         ret, frame = cap.read()
