@@ -15,9 +15,11 @@ width, height = image.size
 _, scale = common.set_resized_input(interpreter, image.size, lambda size: image.resize(size))
 
 # Run inference
+print("invoking!")
 interpreter.invoke()
 result = segment.get_output(interpreter)
 
+print("resizing!")
 # Resize the segmentation result to match the original image size
 result_resized = Image.fromarray(result.astype(np.uint8)).resize((width, height), Image.NEAREST)
 result_resized = np.array(result_resized)
@@ -36,6 +38,7 @@ font = ImageFont.load_default()
 overlay = Image.new("RGBA", image.size, (0, 0, 0, 0))
 draw = ImageDraw.Draw(overlay)
 
+print("applying!")
 # Apply the segmentation masks
 for y in range(height):
     for x in range(width):
