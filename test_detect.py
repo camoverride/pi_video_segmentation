@@ -3,6 +3,9 @@ import numpy as np
 from pycoral.adapters import common
 from pycoral.adapters import segment
 from pycoral.utils.edgetpu import make_interpreter
+from PIL import Image  # Add this line to import Image from PIL
+
+
 
 def create_pascal_label_colormap():
     """Creates a label colormap used in PASCAL VOC segmentation benchmark."""
