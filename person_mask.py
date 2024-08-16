@@ -9,7 +9,7 @@ interpreter = make_interpreter(model_path)
 interpreter.allocate_tensors()
 
 # Load the input image
-input_image_path = 'cam_rgb.jpg'
+input_image_path = 'cam_rbg.jpg'
 image = Image.open(input_image_path)
 width, height = image.size
 _, scale = common.set_resized_input(interpreter, image.size, lambda size: image.resize(size))
@@ -17,6 +17,10 @@ _, scale = common.set_resized_input(interpreter, image.size, lambda size: image.
 # Run inference
 interpreter.invoke()
 result = segment.get_output(interpreter)
+
+# Resize the segmentation result to match the original image size
+result_resized = Image.fromarray(result.astype(np.uint8)).resize((width, height), Image.NEAREST)
+result_resized = np.array(result_resized)
 
 # Create a color map for segmentation
 colors = {
@@ -35,7 +39,7 @@ draw = ImageDraw.Draw(overlay)
 # Apply the segmentation masks
 for y in range(height):
     for x in range(width):
-        label = result[y, x]
+        label = result_resized[y, x]
         if label in colors:
             # Draw the translucent mask
             draw.point((x, y), fill=colors[label])
