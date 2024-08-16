@@ -1,14 +1,16 @@
 import cv2
 import numpy as np
+from PIL import Image  # Add this line to import Image from PIL
 from pycoral.adapters import common
 from pycoral.adapters import segment
 from pycoral.utils.edgetpu import make_interpreter
-from PIL import Image  # Add this line to import Image from PIL
 
 
 
 def create_pascal_label_colormap():
-    """Creates a label colormap used in PASCAL VOC segmentation benchmark."""
+    """
+    Creates a label colormap used in PASCAL VOC segmentation benchmark.
+    """
     colormap = np.zeros((256, 3), dtype=int)
     indices = np.arange(256, dtype=int)
 
@@ -19,8 +21,11 @@ def create_pascal_label_colormap():
 
     return colormap
 
+
 def label_to_color_image(label):
-    """Adds color defined by the dataset colormap to the label."""
+    """
+    Adds color defined by the dataset colormap to the label.
+    """
     if label.ndim != 2:
         raise ValueError('Expect 2-D input label')
 
@@ -31,8 +36,11 @@ def label_to_color_image(label):
 
     return colormap[label]
 
+
 def mask_frame(frame, interpreter, keep_aspect_ratio=False):
-    """Apply semantic segmentation on the input frame and overlay the mask."""
+    """
+    Apply semantic segmentation on the input frame and overlay the mask.
+    """
     width, height = common.input_size(interpreter)
 
     # Resize the input frame
@@ -76,8 +84,11 @@ def mask_frame(frame, interpreter, keep_aspect_ratio=False):
     # Return the result as a numpy array
     return combined
 
+
 def run_webcam_segmentation(model_path):
-    """Capture frames from the webcam, apply the mask, and display the output."""
+    """
+    Capture frames from the webcam, apply the mask, and display the output.
+    """
     # Load the model
     interpreter = make_interpreter(model_path)
     interpreter.allocate_tensors()
@@ -108,6 +119,8 @@ def run_webcam_segmentation(model_path):
     # When everything done, release the capture
     cap.release()
     cv2.destroyAllWindows()
+
+
 
 if __name__ == '__main__':
     model_path = 'deeplabv3_mnv2_dm05_pascal_quant_edgetpu.tflite'
