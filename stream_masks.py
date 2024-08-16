@@ -149,6 +149,14 @@ def run_webcam_segmentation(model_path, categories):
         print("Error: Could not open webcam.")
         return
 
+    # Get the screen resolution
+    screen_width = cv2.getWindowProperty(cv2.namedWindow("Fullscreen"), cv2.WND_PROP_FULLSCREEN)
+    screen_height = cv2.getWindowProperty(cv2.namedWindow("Fullscreen"), cv2.WND_PROP_FULLSCREEN)
+
+    # Resize window to fullscreen
+    cv2.namedWindow("Semantic Segmentation", cv2.WND_PROP_FULLSCREEN)
+    cv2.setWindowProperty("Semantic Segmentation", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+
     while True:
         ret, frame = cap.read()
         if not ret:
@@ -158,8 +166,11 @@ def run_webcam_segmentation(model_path, categories):
         # Apply mask to the current frame
         masked_frame = mask_frame(frame, interpreter, selected_labels)
 
+        # Resize the output frame to fill the screen
+        resized_frame = cv2.resize(masked_frame, (int(screen_width), int(screen_height)))
+
         # Display the resulting frame
-        cv2.imshow('Semantic Segmentation', masked_frame)
+        cv2.imshow('Semantic Segmentation', resized_frame)
 
         # Press 'q' to exit the loop
         if cv2.waitKey(1) & 0xFF == ord('q'):
