@@ -48,7 +48,7 @@ def label_to_color_image(label):
     return colormap[label]
 
 
-def mask_frame(frame, interpreter, selected_labels, keep_aspect_ratio=False):
+def mask_frame(frame, interpreter, selected_labels, prev_mask=None, alpha=0.7):
     """
     Apply semantic segmentation on the input frame, filter by selected labels,
     size up the mask to match the original frame, and overlay the mask.
@@ -77,6 +77,12 @@ def mask_frame(frame, interpreter, selected_labels, keep_aspect_ratio=False):
 
     # Size up the mask to match the original frame dimensions
     mask_img = cv2.resize(filtered_result, (original_width, original_height), interpolation=cv2.INTER_NEAREST)
+    
+    # Apply temporal smoothing
+    if prev_mask is not None:
+        mask_img = cv2.addWeighted(mask_img, alpha, prev_mask, 1 - alpha, 0)
+        mask_img = np.round(mask_img).astype(np.uint8)
+
     color_mask = create_pascal_label_colormap()[mask_img]
 
     # Convert the mask to RGBA and apply transparency
@@ -95,8 +101,7 @@ def mask_frame(frame, interpreter, selected_labels, keep_aspect_ratio=False):
     # Add labels
     labeled_frame = add_labels(combined, mask_img)
 
-    # Return the result as a numpy array
-    return labeled_frame
+    return labeled_frame, mask_img  # Return the current mask as well
 
 
 def add_labels(image, segmentation_result):
@@ -152,14 +157,16 @@ def run_webcam_segmentation(model_path, categories):
     cv2.namedWindow("Semantic Segmentation", cv2.WND_PROP_FULLSCREEN)
     cv2.setWindowProperty("Semantic Segmentation", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 
+    prev_mask = None
+
     while True:
         ret, frame = cap.read()
         if not ret:
             print("Error: Failed to capture image.")
             break
 
-        # Apply mask to the current frame
-        masked_frame = mask_frame(frame, interpreter, selected_labels)
+        # Apply mask to the current frame with temporal smoothing
+        masked_frame, prev_mask = mask_frame(frame, interpreter, selected_labels, prev_mask)
 
         # Resize the output frame to fill the screen
         resized_frame = cv2.resize(masked_frame, (screen_width, screen_height))
