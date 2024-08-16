@@ -1,15 +1,12 @@
 import cv2
 import numpy as np
-from pycoral.adapters import common, detect
-from pycoral.adapters import classify
-from pycoral.adapters import segment
+from pycoral.adapters import common, segment
 from pycoral.utils.edgetpu import make_interpreter
-from pycoral.utils.dataset import read_label_file
 
 
 
 # Load the TFLite model for the Coral TPU
-model_path = "deeplabv3_mnv2_dm05_pascal_quant_edgetpu.tflite"
+model_path = 'deeplabv3_mnv2_dm05_pascal_quant_edgetpu.tflite'
 interpreter = make_interpreter(model_path)
 interpreter.allocate_tensors()
 
@@ -33,8 +30,8 @@ while True:
     # Resize the segmented output to match the original frame size
     segmented_output = cv2.resize(segmented_output, (frame.shape[1], frame.shape[0]))
 
-    # Apply a color map to the segmented output for visualization
-    color_segmented = cv2.applyColorMap(segmented_output, cv2.COLORMAP_JET)
+    # Convert the output to a color map for visualization
+    color_segmented = cv2.applyColorMap((segmented_output * 255 / segmented_output.max()).astype(np.uint8), cv2.COLORMAP_JET)
 
     # Overlay the segmented output on the original frame
     overlay = cv2.addWeighted(frame, 0.7, color_segmented, 0.3, 0)
