@@ -9,7 +9,7 @@ interpreter = make_interpreter(model_path)
 interpreter.allocate_tensors()
 
 # Load the input image
-input_image_path = 'cam_rbg.jpg'
+input_image_path = 'cam_rgb.jpg'
 image = Image.open(input_image_path)
 width, height = image.size
 _, scale = common.set_resized_input(interpreter, image.size, lambda size: image.resize(size))
