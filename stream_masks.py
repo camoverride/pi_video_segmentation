@@ -47,7 +47,7 @@ def label_to_color_image(label):
     return colormap[label]
 
 
-def mask_frame(frame, interpreter, selected_labels, keep_aspect_ratio=True):
+def mask_frame(frame, interpreter, selected_labels, keep_aspect_ratio=False):
     """
     Apply semantic segmentation on the input frame, filter by selected labels,
     and overlay the mask.
