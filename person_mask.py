@@ -15,11 +15,9 @@ width, height = image.size
 _, scale = common.set_resized_input(interpreter, image.size, lambda size: image.resize(size))
 
 # Run inference
-print("invoking!")
 interpreter.invoke()
 result = segment.get_output(interpreter)
 
-print("resizing!")
 # Resize the segmentation result to match the original image size
 result_resized = Image.fromarray(result.astype(np.uint8)).resize((width, height), Image.NEAREST)
 result_resized = np.array(result_resized)
@@ -31,27 +29,22 @@ colors = {
     2: (0, 255, 255, 128)   # Bicycle in translucent cyan
 }
 
-# Load a font for labels
-font = ImageFont.load_default()
+# Prepare a transparent overlay
+overlay = np.zeros((height, width, 4), dtype=np.uint8)
 
-# Create a transparent layer for overlay
-overlay = Image.new("RGBA", image.size, (0, 0, 0, 0))
-draw = ImageDraw.Draw(overlay)
+# Apply the mask using NumPy for better performance
+for label, color in colors.items():
+    mask = result_resized == label
+    overlay[mask] = color
 
-print("applying!")
-# Apply the segmentation masks
-for y in range(height):
-    for x in range(width):
-        label = result_resized[y, x]
-        if label in colors:
-            # Draw the translucent mask
-            draw.point((x, y), fill=colors[label])
+# Convert overlay to an image and composite with the original
+overlay_img = Image.fromarray(overlay, mode="RGBA")
+output_image = Image.alpha_composite(image.convert("RGBA"), overlay_img)
 
-# Composite the original image with the overlay
-output_image = Image.alpha_composite(image.convert("RGBA"), overlay)
-
-# Save the output image
+# Save the output image with additional error handling
 output_image_path = 'segmentation_result.png'
-output_image.save(output_image_path)
-
-print(f"Segmentation result saved at {output_image_path}")
+try:
+    output_image.save(output_image_path)
+    print(f"Segmentation result saved at {output_image_path}")
+except Exception as e:
+    print(f"Failed to save the image: {e}")
