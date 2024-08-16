@@ -11,6 +11,7 @@ progressbar2==4.4.2
 pycoral==2.0.0
 python-utils==3.8.2
 requests==2.32.3
+screeninfo==0.8.1
 soupsieve==2.6
 tflite-runtime==2.5.0.post1
 typing_extensions==4.12.2
