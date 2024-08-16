@@ -5,6 +5,7 @@ from pycoral.adapters import common, segment
 
 # Load the segmentation model
 model_path = 'deeplabv3_mnv2_pascal_quant_edgetpu.tflite'
+model_path = 'deeplabv3_mnv2_dm05_pascal_quant_edgetpu.tflite'
 interpreter = make_interpreter(model_path)
 interpreter.allocate_tensors()
 
