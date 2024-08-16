@@ -51,18 +51,15 @@ def label_to_color_image(label):
 def mask_frame(frame, interpreter, selected_labels, keep_aspect_ratio=False):
     """
     Apply semantic segmentation on the input frame, filter by selected labels,
-    and overlay the mask.
+    size up the mask to match the original frame, and overlay the mask.
     """
+    original_height, original_width = frame.shape[:2]
     width, height = common.input_size(interpreter)
 
-    # Resize the input frame
+    # Resize the input frame to match model input size
     img = Image.fromarray(frame)
-    if keep_aspect_ratio:
-        resized_img, _ = common.set_resized_input(
-            interpreter, img.size, lambda size: img.resize(size, Image.LANCZOS))
-    else:
-        resized_img = img.resize((width, height), Image.LANCZOS)
-        common.set_input(interpreter, resized_img)
+    resized_img = img.resize((width, height), Image.LANCZOS)
+    common.set_input(interpreter, resized_img)
 
     # Run inference
     interpreter.invoke()
@@ -72,35 +69,31 @@ def mask_frame(frame, interpreter, selected_labels, keep_aspect_ratio=False):
     if len(result.shape) == 3:
         result = np.argmax(result, axis=-1)
 
-    # If keep_aspect_ratio, we need to remove the padding area.
-    new_width, new_height = resized_img.size
-    result = result[:new_height, :new_width]
-
     # Filter the segmentation result to only include selected labels
     filtered_result = np.zeros_like(result)
     for label_name in selected_labels:
         label_index = LABELS.index(label_name)
         filtered_result[result == label_index] = label_index
 
-    # Create the mask image using the colormap
-    colormap = create_pascal_label_colormap()
-    mask_img = colormap[filtered_result]
+    # Size up the mask to match the original frame dimensions
+    mask_img = cv2.resize(filtered_result, (original_width, original_height), interpolation=cv2.INTER_NEAREST)
+    color_mask = create_pascal_label_colormap()[mask_img]
 
     # Convert the mask to RGBA and apply transparency
-    mask_img = cv2.cvtColor(mask_img.astype(np.uint8), cv2.COLOR_RGB2RGBA)
-    mask_img[:, :, 3] = 128  # Set transparency to 50%
+    color_mask = cv2.cvtColor(color_mask.astype(np.uint8), cv2.COLOR_RGB2RGBA)
+    color_mask[:, :, 3] = 128  # Set transparency to 50%
 
-    # Convert the resized input image to RGBA
-    base_img = cv2.cvtColor(np.array(resized_img), cv2.COLOR_RGB2RGBA)
+    # Convert the original input frame to RGBA
+    base_img = cv2.cvtColor(frame, cv2.COLOR_RGB2RGBA)
 
-    # Overlay the mask on the base image
-    combined = cv2.addWeighted(base_img, 1.0, mask_img, 0.5, 0)
+    # Overlay the mask on the original frame
+    combined = cv2.addWeighted(base_img, 1.0, color_mask, 0.5, 0)
 
     # Convert back to RGB
     combined = cv2.cvtColor(combined, cv2.COLOR_RGBA2RGB)
 
     # Add labels
-    labeled_frame = add_labels(combined, filtered_result)
+    labeled_frame = add_labels(combined, mask_img)
 
     # Return the result as a numpy array
     return labeled_frame
