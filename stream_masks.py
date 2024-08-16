@@ -155,6 +155,9 @@ def run_webcam_segmentation(model_path, categories):
     screen_width = monitor.width
     screen_height = monitor.height
 
+    # Create a named window with normal flags to resize later
+    cv2.namedWindow("Semantic Segmentation", cv2.WINDOW_NORMAL)
+
     while True:
         ret, frame = cap.read()
         if not ret:
