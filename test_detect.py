@@ -116,7 +116,7 @@ if __name__ == '__main__':
     model_path = 'deeplabv3_resnet50_pascal_quant_edgetpu.tflite'
     model_path = 'deeplabv3_resnet50_coco_quant_edgetpu.tflite'
 
-    model_path = 'deeplabv3_xception65_pascal_quant_edgetpu.tflite'
+    # model_path = 'deeplabv3_xception65_pascal_quant_edgetpu.tflite'
     # model_path = 'deeplabv3_xception65_coco_quant_edgetpu.tflite'
 
     run_webcam_segmentation(model_path)
