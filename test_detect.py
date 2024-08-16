@@ -89,8 +89,8 @@ def mask_frame(image, model_path, keep_aspect_ratio=False):
 
 # Example usage
 if __name__ == '__main__':
-    input_image = np.array(Image.open('test_data/bird.bmp'))
-    model_path = 'test_data/deeplabv3_mnv2_pascal_quant_edgetpu.tflite'
+    input_image = np.array(Image.open('bird.bmp'))
+    model_path = 'deeplabv3_mnv2_dm05_pascal_quant_edgetpu.tflite'
 
     output_image = mask_frame(input_image, model_path, keep_aspect_ratio=True)
     cv2.imwrite('output.jpg', output_image)
