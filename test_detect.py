@@ -71,7 +71,8 @@ def mask_frame(image, model_path, keep_aspect_ratio=False):
         if item[0] == 0 and item[1] == 0 and item[2] == 0:
             new_data.append((255, 255, 255, 0))  # Fully transparent
         else:
-            new_data.append((item[0], item[1], item[2], 128))  # Set transparency
+            # new_data.append((item[0], item[1], item[2], 128))  # Set transparency
+            new_data.append((255, 0, 0, 128))  # Light translucent red
 
     mask_img.putdata(new_data)
 
