@@ -34,7 +34,7 @@ def load_and_stream_memmap(memmap_file, height, width, channels=3):
         frame = frames[i]
         cv2.imshow('Memmap Stream', frame)
 
-        if cv2.waitKey(30) & 0xFF == 27:  # ESC key to stop
+        if cv2.waitKey(300) & 0xFF == 27:  # ESC key to stop
             break
 
     cv2.destroyAllWindows()
