@@ -25,16 +25,15 @@ def load_overlay_file(overlay_memmap_file, height, width, channels=3):
     
     return overlay_frames, num_overlay_frames
 
-def stream_and_overlay(rtsp_url, height, width, composites_dir, channels=3):
+def stream_and_overlay(rtsp_url_or_camera_index, height, width, composites_dir, channels=3):
     """
-    Open an RTSP stream and overlay the frames with frames from the `composites_dir`.
-    The composites should be created from frames from the same camera in the same
-    position (the camera must be stationary).
+    Open an RTSP stream or local camera and overlay the frames with frames from the `composites_dir`.
+    The composites should be created from frames from the same camera in the same position (the camera must be stationary).
     """
-    cap = cv2.VideoCapture(rtsp_url)
+    cap = cv2.VideoCapture(rtsp_url_or_camera_index)
 
     if not cap.isOpened():
-        print("Error: Could not open RTSP stream.")
+        print("Error: Could not open video capture.")
         return
     
     overlay_memmap_file = get_most_recent_file(composites_dir)
@@ -47,13 +46,13 @@ def stream_and_overlay(rtsp_url, height, width, composites_dir, channels=3):
     overlay_index = 0
 
     while True:
-        # Read a frame from the RTSP stream
+        # Read a frame from the video capture
         ret, rtsp_frame = cap.read()
         if not ret:
-            print("Error: Could not read frame from RTSP stream.")
+            print("Error: Could not read frame from video capture.")
             break
 
-        # Resize the RTSP frame to match the expected height and width
+        # Resize the frame to match the expected height and width
         rtsp_frame = cv2.resize(rtsp_frame, (width, height))
 
         # Get the current overlay frame
@@ -122,10 +121,13 @@ if __name__ == "__main__":
     with open("config.yaml", "r") as f:
         config = yaml.safe_load(f)
 
-    RTSP_URL = config["rtsp_url"]
+    RTSP_URL_OR_CAMERA_INDEX = config["rtsp_url"]  # Can be an RTSP URL or an integer camera index
     HEIGHT = config["height"]
     WIDTH = config["width"]
     DURATION = config["duration"]
     FPS = config["fps"]
 
-    stream_and_overlay(rtsp_url=RTSP_URL, height=HEIGHT, width=WIDTH, composites_dir="composites")
+    stream_and_overlay(rtsp_url_or_camera_index=RTSP_URL_OR_CAMERA_INDEX,
+                       height=HEIGHT,
+                       width=WIDTH,
+                       composites_dir="composites")
