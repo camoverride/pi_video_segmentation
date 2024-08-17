@@ -1,6 +1,7 @@
 import numpy as np
 import cv2
 from image_utils import get_num_frames
+import yaml
 
 
 
@@ -79,16 +80,26 @@ def overlay_videos(background_video_memmap,
 
 
 if __name__ == "__main__":
+
+
+    # Read the config file.
+    with open("config.yaml", "r") as f:
+        config = yaml.safe_load(f)
+
+    HEIGHT = config["height"]
+    WIDTH = config["width"]
+
+
     from image_utils import display_memmap_frames
 
     # Overlay two video files. NOTE: they may need to be generated.
     overlay_videos(background_video_memmap="output_video_1.dat",
                    foreground_video_memmap="output_video_2.dat",
                    output_video_memmap="overlayed_video_a.dat",
-                   height=1440,
-                   width=2560)
+                   height=HEIGHT,
+                   width=WIDTH)
 
     # Display the result.
     display_memmap_frames(memmap_file="overlayed_video_a.dat",
-                          height=1440,
-                          width=2560)
+                          height=HEIGHT,
+                          width=WIDTH)
