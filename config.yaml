@@ -1,4 +1,4 @@
-rtsp_url: 0
+rtsp_url: rtsp://admin:admin123456@192.168.12.124:554/live
 height: 1080
 width: 1920
 duration: 3
