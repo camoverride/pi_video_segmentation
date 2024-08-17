@@ -3,8 +3,6 @@ import cv2
 from image_utils import get_num_frames
 import yaml
 
-
-
 def overlay_videos(background_video_memmap,
                    foreground_video_memmap,
                    output_video_memmap,
@@ -40,55 +38,47 @@ def overlay_videos(background_video_memmap,
                               shape=(num_frames, height, width, channels))
 
     for i in range(num_frames):
-        if i < background_num_frames and i < foreground_num_frames:
-            # Get the current frames from background and foreground videos
+        if i < background_num_frames:
             background_frame = background_frames[i]
+        else:
+            background_frame = np.zeros((height, width, channels), dtype='uint8')
+
+        if i < foreground_num_frames:
             foreground_frame = foreground_frames[i]
+        else:
+            foreground_frame = np.zeros((height, width, channels), dtype='uint8')
 
-            # Create a binary mask from the foreground by checking where there are non-black pixels
-            foreground_mask = cv2.cvtColor(foreground_frame, cv2.COLOR_BGR2GRAY)
-            _, foreground_mask = cv2.threshold(foreground_mask, 1, 255, cv2.THRESH_BINARY)
+        # Create a binary mask from the foreground by checking where there are non-black pixels
+        foreground_mask = cv2.cvtColor(foreground_frame, cv2.COLOR_BGR2GRAY)
+        _, foreground_mask = cv2.threshold(foreground_mask, 1, 255, cv2.THRESH_BINARY)
 
-            # Invert the mask to create a mask for the background
-            background_mask = cv2.bitwise_not(foreground_mask)
+        # Invert the mask to create a mask for the background
+        background_mask = cv2.bitwise_not(foreground_mask)
 
-            # Apply the masks
-            background_frame_masked = cv2.bitwise_and(background_frame,
-                                                      background_frame,
-                                                      mask=background_mask)
-            foreground_frame_masked = cv2.bitwise_and(foreground_frame,
-                                                      foreground_frame,
-                                                      mask=foreground_mask)
+        # Apply the masks
+        background_frame_masked = cv2.bitwise_and(background_frame,
+                                                  background_frame,
+                                                  mask=background_mask)
+        foreground_frame_masked = cv2.bitwise_and(foreground_frame,
+                                                  foreground_frame,
+                                                  mask=foreground_mask)
 
-            # Add the foreground frame on top of the masked background frame
-            combined_frame = cv2.add(background_frame_masked, foreground_frame_masked)
+        # Add the foreground frame on top of the masked background frame
+        combined_frame = cv2.add(background_frame_masked, foreground_frame_masked)
 
-        elif i < background_num_frames:
-            # Only background frame is available
-            combined_frame = background_frames[i]
-        
-        elif i < foreground_num_frames:
-            # Only foreground frame is available
-            combined_frame = foreground_frames[i]
-        
         # Save the combined frame to the output memmap array
         output_frames[i] = combined_frame
 
     # Flush the output memmap to disk
     output_frames.flush()
 
-
-
 if __name__ == "__main__":
-
-
     # Read the config file.
     with open("config.yaml", "r") as f:
         config = yaml.safe_load(f)
 
     HEIGHT = config["height"]
     WIDTH = config["width"]
-
 
     from image_utils import display_memmap_frames
 
