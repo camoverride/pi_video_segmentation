@@ -4,8 +4,6 @@ import numpy as np
 import yaml
 from image_utils import get_most_recent_file
 
-
-
 def get_num_frames(memmap_file, height, width, channels=3):
     """
     Calculate the number of frames based on the size of the memmap file.
@@ -15,10 +13,9 @@ def get_num_frames(memmap_file, height, width, channels=3):
 
     return file_size // frame_size
 
-
-def load_overlay_file(overlay_memmap_file, height, width, channels):
+def load_overlay_file(overlay_memmap_file, height, width, channels=3):
     """
-    Load the memmap file with overlay frames
+    Load the memmap file with overlay frames.
     """
     num_overlay_frames = get_num_frames(overlay_memmap_file, height, width, channels)
     overlay_frames = np.memmap(overlay_memmap_file,
@@ -27,7 +24,6 @@ def load_overlay_file(overlay_memmap_file, height, width, channels):
                                shape=(num_overlay_frames, height, width, channels))
     
     return overlay_frames, num_overlay_frames
-
 
 def stream_and_overlay(rtsp_url, height, width, composites_dir, channels=3):
     """
@@ -57,8 +53,18 @@ def stream_and_overlay(rtsp_url, height, width, composites_dir, channels=3):
             print("Error: Could not read frame from RTSP stream.")
             break
 
+        # Resize the RTSP frame to match the expected height and width
+        rtsp_frame = cv2.resize(rtsp_frame, (width, height))
+
         # Get the current overlay frame
         overlay_frame = overlay_frames[overlay_index]
+
+        # Ensure both frames have the same number of channels
+        if rtsp_frame.shape[2] != overlay_frame.shape[2]:
+            if rtsp_frame.shape[2] == 3 and overlay_frame.shape[2] == 1:
+                overlay_frame = cv2.cvtColor(overlay_frame, cv2.COLOR_GRAY2BGR)
+            elif rtsp_frame.shape[2] == 1 and overlay_frame.shape[2] == 3:
+                rtsp_frame = cv2.cvtColor(rtsp_frame, cv2.COLOR_BGR2GRAY)
 
         # Create a binary mask from the overlay by checking where there are non-black pixels
         overlay_mask = cv2.cvtColor(overlay_frame, cv2.COLOR_BGR2GRAY)
@@ -90,7 +96,7 @@ def stream_and_overlay(rtsp_url, height, width, composites_dir, channels=3):
             overlay_index = 0
             
             # Check for a new most recent file
-            new_overlay_memmap_file = get_most_recent_file("composites")
+            new_overlay_memmap_file = get_most_recent_file(composites_dir)
             if new_overlay_memmap_file != overlay_memmap_file:
                 print(f"Switching to new overlay file: {new_overlay_memmap_file}")
                 overlay_memmap_file = new_overlay_memmap_file
@@ -111,9 +117,7 @@ def stream_and_overlay(rtsp_url, height, width, composites_dir, channels=3):
     cv2.destroyAllWindows()
 
 
-
 if __name__ == "__main__":
-
     # Read the config file.
     with open("config.yaml", "r") as f:
         config = yaml.safe_load(f)

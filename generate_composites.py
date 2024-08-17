@@ -165,7 +165,7 @@ if __name__ == "__main__":
         current_time = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
         new_composite_path = os.path.join(COMPOSITES_DIR, current_time) + ".dat"
         most_recent_composite_path = get_most_recent_file(COMPOSITES_DIR)
-        print(f"3) Creating {new_composite_path} from {most_recent_composite_path} and {tmp_memmap_mask_non_composite_path}")
+        print(f"Creating {new_composite_path} from {most_recent_composite_path} and {tmp_memmap_mask_non_composite_path}")
         overlay_videos(background_video_memmap=most_recent_composite_path,
                        foreground_video_memmap=tmp_memmap_mask_non_composite_path,
                        output_video_memmap=new_composite_path,
