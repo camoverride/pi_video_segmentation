@@ -67,6 +67,10 @@ def stream_and_overlay(rtsp_url, height, width, composites_dir, channels=3):
         # Invert the mask to create a mask for the RTSP frame
         rtsp_mask = cv2.bitwise_not(overlay_mask)
 
+        # Ensure the mask dimensions match the RTSP frame
+        if rtsp_frame.shape[:2] != rtsp_mask.shape:
+            rtsp_mask = cv2.resize(rtsp_mask, (rtsp_frame.shape[1], rtsp_frame.shape[0]))
+
         # Apply the masks
         rtsp_frame_masked = cv2.bitwise_and(rtsp_frame, rtsp_frame, mask=rtsp_mask)
         overlay_frame_masked = cv2.bitwise_and(overlay_frame, overlay_frame, mask=overlay_mask)
