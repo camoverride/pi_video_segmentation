@@ -96,7 +96,7 @@ def capture_and_segment(model_path):
     cv2.imshow('Segmented Image', masked_frame)
 
     # Press any key to close the window
-    cv2.waitKey(0)
+    cv2.waitKey("q")
     cv2.destroyAllWindows()
 
     # Save the result

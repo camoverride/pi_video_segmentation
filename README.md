@@ -19,4 +19,4 @@
 ## TODO's
 
 - Compile TF -> TFLite models for the TPU
-- Get labels on detected objects
+- Individual frames vs video/frame batches?
