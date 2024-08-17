@@ -96,8 +96,11 @@ def create_masks_with_tflite(recording_duration, masked_memmaps_path, model_path
             print("Error: Could not read frame from RTSP stream.")
             break
 
+        # Resize the frame to match the target dimensions (height x width)
+        frame_resized = cv2.resize(frame, (width, height))
+
         # Apply the TFLite model to mask the frame
-        masked_frame = mask_frame(frame, interpreter, selected_label="person")
+        masked_frame = mask_frame(frame_resized, interpreter, selected_label="person")
         memmap_frames[frame_idx] = masked_frame
         frame_idx += 1
 
@@ -106,6 +109,7 @@ def create_masks_with_tflite(recording_duration, masked_memmaps_path, model_path
 
     # Release the RTSP stream
     cap.release()
+
 
 def reset_directory(directory_path):
     """
