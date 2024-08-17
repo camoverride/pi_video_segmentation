@@ -3,6 +3,9 @@ import cv2
 import numpy as np
 import yaml
 from image_utils import get_most_recent_file
+import os
+
+
 
 def get_num_frames(memmap_file, height, width, channels=3):
     """
@@ -46,6 +49,8 @@ def stream_and_overlay(rtsp_url_or_camera_index, height, width, composites_dir, 
     overlay_index = 0
 
     while True:
+        
+        os.system("xset dpms force on")
         # Read a frame from the video capture
         ret, rtsp_frame = cap.read()
         if not ret:
@@ -117,6 +122,9 @@ def stream_and_overlay(rtsp_url_or_camera_index, height, width, composites_dir, 
 
 
 if __name__ == "__main__":
+
+    os.environ['DISPLAY'] = ':0'
+
     # Read the config file.
     with open("config.yaml", "r") as f:
         config = yaml.safe_load(f)
