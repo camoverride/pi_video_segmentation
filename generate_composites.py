@@ -10,6 +10,8 @@ import yaml
 from datetime import datetime
 from image_utils import RTSPVideoRecorder, get_most_recent_file
 from overlay_memmaps import overlay_videos
+import time
+
 
 # List of category labels for the PASCAL VOC 2012 dataset
 LABELS = [
@@ -103,6 +105,9 @@ def create_masks_with_tflite(recording_duration, masked_memmaps_path, model_path
         masked_frame = mask_frame(frame_resized, interpreter, selected_label="person")
         memmap_frames[frame_idx] = masked_frame
         frame_idx += 1
+
+    # Frame rate synchronization
+    time.sleep(1 / fps)
 
     # Flush the output memory-mapped file to disk
     memmap_frames.flush()
