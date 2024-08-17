@@ -140,7 +140,7 @@ if __name__ == "__main__":
     # Record a new video as a memmap
     current_time = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     output_memmap_path = os.path.join(COMPOSITES_DIR, current_time) + ".dat"
-    print(f"Saving masked video frames as a memmap: {output_memmap_path}")
+    print(f"START: Saving masked video frames as a memmap: {output_memmap_path}")
     create_masks_with_tflite(recording_duration=DURATION,
                              masked_memmaps_path=output_memmap_path,
                              model_path=MODEL_PATH,
@@ -149,42 +149,27 @@ if __name__ == "__main__":
                              rtsp_url=RTSP_URL,
                              fps=FPS)
     
+    while True:
+        # Record a new video as a memmap
+        tmp_memmap_mask_non_composite_path = f"_tmp_non_composite.dat"
+        print(f"Saving temp video: {output_memmap_path}")
+        create_masks_with_tflite(recording_duration=DURATION,
+                                masked_memmaps_path=tmp_memmap_mask_non_composite_path,
+                                model_path=MODEL_PATH,
+                                height=HEIGHT,
+                                width=WIDTH,
+                                rtsp_url=RTSP_URL,
+                                fps=FPS)
 
-    # # Copy mask to the composites directory.
-    # composite_memmap_copy_path = os.path.join(COMPOSITES_DIR, NEW_MASK_MEMMAP_PATH)
-    # print(f"--- Copying {NEW_MASK_MEMMAP_PATH} to {composite_memmap_copy_path}")
-    # shutil.copy(NEW_MASK_MEMMAP_PATH, composite_memmap_copy_path)
-
-
-
-
-
-
-
-
-
-
-    # while True:
-    #     # Get the time for file naming
-    #     current_time = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-
-    #     print("1) Recording video as memmap")
-
-    #     print(f"2) Creating mask: {NEW_MASK_MEMMAP_PATH}")
-    #     create_masks_with_tflite(path_to_input_memmaps,
-    #                              output_frame_memmaps=NEW_MASK_MEMMAP_PATH,
-    #                              output_frame_mask_memmaps="_new_video_mask.dat",
-    #                              model_path=MODEL_PATH)
-
-    #     # Overlay with the previously created composite video
-    #     most_recent_composite = get_most_recent_file(COMPOSITES_DIR)
-    #     output_memmap_path = os.path.join(COMPOSITES_DIR, current_time) + ".dat"
-
-    #     print(f"3) Creating {output_memmap_path} from {most_recent_composite} and {NEW_MASK_MEMMAP_PATH}")
-    #     overlay_videos(background_video_memmap=most_recent_composite,
-    #                    foreground_video_memmap=NEW_MASK_MEMMAP_PATH,
-    #                    output_video_memmap=output_memmap_path,
-    #                    height=HEIGHT,
-    #                    width=WIDTH)
+        # Overlay with the previously created composite video
+        current_time = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+        new_composite_path = os.path.join(COMPOSITES_DIR, current_time) + ".dat"
+        most_recent_composite_path = get_most_recent_file(COMPOSITES_DIR)
+        print(f"3) Creating {new_composite_path} from {most_recent_composite_path} and {tmp_memmap_mask_non_composite_path}")
+        overlay_videos(background_video_memmap=most_recent_composite_path,
+                       foreground_video_memmap=tmp_memmap_mask_non_composite_path,
+                       output_video_memmap=new_composite_path,
+                       height=HEIGHT,
+                       width=WIDTH)
         
-    #     print("--------------------------------------------------------------")
+        print("--------------------------------------------------------------")
