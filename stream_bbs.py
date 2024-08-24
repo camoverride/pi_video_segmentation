@@ -6,11 +6,25 @@ import ctypes
 from pycoral.adapters import common, detect
 from pycoral.utils.edgetpu import make_interpreter
 
-
 # Initialize the Coral Edge TPU with the SSD MobileNet model
 model_path = 'ssd_mobilenet_v2_coco_quant_postprocess_edgetpu.tflite'
 interpreter = make_interpreter(model_path)
 interpreter.allocate_tensors()
+
+# COCO labels for the object detection categories
+COCO_LABELS = [
+    'person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat', 
+    'traffic light', 'fire hydrant', 'stop sign', 'parking meter', 'bench', 'bird', 'cat', 
+    'dog', 'horse', 'sheep', 'cow', 'elephant', 'bear', 'zebra', 'giraffe', 'backpack', 
+    'umbrella', 'handbag', 'tie', 'suitcase', 'frisbee', 'skis', 'snowboard', 'sports ball', 
+    'kite', 'baseball bat', 'baseball glove', 'skateboard', 'surfboard', 'tennis racket', 
+    'bottle', 'wine glass', 'cup', 'fork', 'knife', 'spoon', 'bowl', 'banana', 'apple', 
+    'sandwich', 'orange', 'broccoli', 'carrot', 'hot dog', 'pizza', 'donut', 'cake', 
+    'chair', 'couch', 'potted plant', 'bed', 'dining table', 'toilet', 'tv', 'laptop', 
+    'mouse', 'remote', 'keyboard', 'cell phone', 'microwave', 'oven', 'toaster', 'sink', 
+    'refrigerator', 'book', 'clock', 'vase', 'scissors', 'teddy bear', 'hair drier', 
+    'toothbrush'
+]
 
 def detect_objects(frame):
     # Resize the input frame to match the model's expected input size
@@ -38,15 +52,15 @@ def detect_objects(frame):
         ymax = int(ymax * scale_y)
         xmax = int(xmax * scale_x)
 
-        # Adjust if the image is flipped or mirrored
-        # Uncomment one of these if your boxes appear mirrored or flipped
-        xmin, xmax = frame.shape[1] - xmax, frame.shape[1] - xmin  # Horizontal flip
-        ymin, ymax = frame.shape[0] - ymax, frame.shape[0] - ymin  # Vertical flip
+        # Draw bounding box (red color, thickness 1)
+        cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), (0, 0, 255), 1)
 
-        # Draw bounding box
-        cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), (0, 255, 0), 2)
-        label = f'{obj.id}: {obj.score:.2f}'
-        cv2.putText(frame, label, (xmin, ymin - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+        # Get the label name from COCO_LABELS
+        label = COCO_LABELS[obj.id] if obj.id < len(COCO_LABELS) else 'Unknown'
+        label = f'{label}: {obj.score:.2f}'
+
+        # Draw the label above the bounding box
+        cv2.putText(frame, label, (xmin, ymin - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
 
     return frame
 
