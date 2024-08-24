@@ -40,7 +40,7 @@ def detect_objects(frame):
 
         # Adjust if the image is flipped or mirrored
         # Uncomment one of these if your boxes appear mirrored or flipped
-        # xmin, xmax = frame.shape[1] - xmax, frame.shape[1] - xmin  # Horizontal flip
+        xmin, xmax = frame.shape[1] - xmax, frame.shape[1] - xmin  # Horizontal flip
         # ymin, ymax = frame.shape[0] - ymax, frame.shape[0] - ymin  # Vertical flip
 
         # Draw bounding box
