@@ -41,15 +41,25 @@ def detect_objects(frame):
     # Get the output tensor and postprocess to obtain detections
     boxes = detect.get_objects(interpreter, score_threshold=0.5)
 
+    # Debugging: Print the input and output dimensions
+    print(f"Original Frame Size: {original_width}x{original_height}")
+    print(f"Resized Frame Size: {input_width}x{input_height}")
+
     # Scale the bounding boxes back to the original frame size
     for obj in boxes:
         ymin, xmin, ymax, xmax = obj.bbox
+
+        # Debugging: Print the original bounding box coordinates
+        print(f"Original Bounding Box: ({xmin}, {ymin}), ({xmax}, {ymax})")
 
         # Scale coordinates to the original image dimensions
         xmin = int(xmin / input_width * original_width)
         xmax = int(xmax / input_width * original_width)
         ymin = int(ymin / input_height * original_height)
         ymax = int(ymax / input_height * original_height)
+
+        # Debugging: Print the scaled bounding box coordinates
+        print(f"Scaled Bounding Box: ({xmin}, {ymin}), ({xmax}, {ymax})")
 
         # Draw bounding box (red color, thickness 1)
         cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), (0, 0, 255), 1)
