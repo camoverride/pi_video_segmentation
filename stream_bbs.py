@@ -41,8 +41,10 @@ def detect_objects(frame):
     pad_x = (input_width - new_width) // 2
     pad_y = (input_height - new_height) // 2
 
-    # Pad the resized image
-    padded_frame = cv2.copyMakeBorder(resized_frame, pad_y, pad_y, pad_x, pad_x, cv2.BORDER_CONSTANT, value=(0, 0, 0))
+    # Ensure exact padding to match input dimensions
+    padded_frame = cv2.copyMakeBorder(resized_frame, pad_y, pad_y + (input_height - new_height) % 2,
+                                      pad_x, pad_x + (input_width - new_width) % 2,
+                                      cv2.BORDER_CONSTANT, value=(0, 0, 0))
 
     # Set the input tensor
     common.set_input(interpreter, padded_frame)
@@ -71,6 +73,7 @@ def detect_objects(frame):
         cv2.putText(frame, label, (xmin, ymin - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
 
     return frame
+
 
 class VLCPlayer:
     def __init__(self, url):
