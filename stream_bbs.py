@@ -30,6 +30,11 @@ def detect_objects(frame):
     # Resize the input frame to match the model's expected input size
     _, input_height, input_width, _ = interpreter.get_input_details()[0]['shape']
     original_height, original_width = frame.shape[:2]
+    
+    # Compute scale factors
+    scale_x = original_width / input_width
+    scale_y = original_height / input_height
+    
     resized_frame = cv2.resize(frame, (input_width, input_height))
 
     # Set the input tensor
@@ -53,10 +58,10 @@ def detect_objects(frame):
         print(f"Original Bounding Box: ({xmin}, {ymin}), ({xmax}, {ymax})")
 
         # Scale coordinates to the original image dimensions
-        xmin = int(xmin / input_width * original_width)
-        xmax = int(xmax / input_width * original_width)
-        ymin = int(ymin / input_height * original_height)
-        ymax = int(ymax / input_height * original_height)
+        xmin = int(xmin * scale_x)
+        xmax = int(xmax * scale_x)
+        ymin = int(ymin * scale_y)
+        ymax = int(ymax * scale_y)
 
         # Debugging: Print the scaled bounding box coordinates
         print(f"Scaled Bounding Box: ({xmin}, {ymin}), ({xmax}, {ymax})")
