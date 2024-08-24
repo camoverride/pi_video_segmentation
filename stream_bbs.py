@@ -30,24 +30,11 @@ def detect_objects(frame):
     original_height, original_width = frame.shape[:2]
     input_height, input_width = interpreter.get_input_details()[0]['shape'][1:3]
 
-    # Resize while maintaining aspect ratio and adding padding if needed
-    scale = min(input_width / original_width, input_height / original_height)
-    new_width = int(original_width * scale)
-    new_height = int(original_height * scale)
-    
-    resized_frame = cv2.resize(frame, (new_width, new_height))
-
-    # Calculate padding
-    pad_x = (input_width - new_width) // 2
-    pad_y = (input_height - new_height) // 2
-
-    # Ensure exact padding to match input dimensions
-    padded_frame = cv2.copyMakeBorder(resized_frame, pad_y, pad_y + (input_height - new_height) % 2,
-                                      pad_x, pad_x + (input_width - new_width) % 2,
-                                      cv2.BORDER_CONSTANT, value=(0, 0, 0))
+    # Resize the image directly to the model's expected input size
+    resized_frame = cv2.resize(frame, (input_width, input_height))
 
     # Set the input tensor
-    common.set_input(interpreter, padded_frame)
+    common.set_input(interpreter, resized_frame)
 
     # Run inference
     interpreter.invoke()
@@ -55,14 +42,17 @@ def detect_objects(frame):
     # Get detected objects
     boxes = detect.get_objects(interpreter, score_threshold=0.5)
 
+    # Scale bounding boxes back to original frame size
+    scale_x = original_width / input_width
+    scale_y = original_height / input_height
+
     for obj in boxes:
         ymin, xmin, ymax, xmax = obj.bbox
 
-        # Undo padding and scaling to get coordinates in original image
-        xmin = max(0, int((xmin - pad_x) / scale))
-        xmax = min(original_width, int((xmax - pad_x) / scale))
-        ymin = max(0, int((ymin - pad_y) / scale))
-        ymax = min(original_height, int((ymax - pad_y) / scale))
+        xmin = int(xmin * scale_x)
+        xmax = int(xmax * scale_x)
+        ymin = int(ymin * scale_y)
+        ymax = int(ymax * scale_y)
 
         # Draw bounding box
         cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), (0, 0, 255), 2)
@@ -73,7 +63,6 @@ def detect_objects(frame):
         cv2.putText(frame, label, (xmin, ymin - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
 
     return frame
-
 
 class VLCPlayer:
     def __init__(self, url):
