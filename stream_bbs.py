@@ -29,6 +29,7 @@ COCO_LABELS = [
 def detect_objects(frame):
     # Resize the input frame to match the model's expected input size
     _, input_height, input_width, _ = interpreter.get_input_details()[0]['shape']
+    original_height, original_width = frame.shape[:2]
     resized_frame = cv2.resize(frame, (input_width, input_height))
 
     # Set the input tensor
@@ -41,18 +42,14 @@ def detect_objects(frame):
     boxes = detect.get_objects(interpreter, score_threshold=0.5)
 
     # Scale the bounding boxes back to the original frame size
-    scale_x = frame.shape[1] / input_width
-    scale_y = frame.shape[0] / input_height
-
-    # Draw bounding boxes on the original frame
     for obj in boxes:
         ymin, xmin, ymax, xmax = obj.bbox
 
-        # Scale bounding box coordinates back to the original frame size
-        xmin = int(xmin * scale_x)
-        xmax = int(xmax * scale_x)
-        ymin = int(ymin * scale_y)
-        ymax = int(ymax * scale_y)
+        # Scale coordinates to the original image dimensions
+        xmin = int(xmin / input_width * original_width)
+        xmax = int(xmax / input_width * original_width)
+        ymin = int(ymin / input_height * original_height)
+        ymax = int(ymax / input_height * original_height)
 
         # Draw bounding box (red color, thickness 1)
         cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), (0, 0, 255), 1)
