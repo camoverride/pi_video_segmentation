@@ -3,9 +3,8 @@ import vlc
 import numpy as np
 import cv2
 import ctypes
-from pycoral.adapters import common, detect, segment
+from pycoral.adapters import common, detect
 from pycoral.utils.edgetpu import make_interpreter
-
 
 
 # Download the model
@@ -14,32 +13,6 @@ model_path = 'ssd_mobilenet_v2_coco_quant_postprocess_edgetpu.tflite'
 # Initialize the Coral Edge TPU with the SSD MobileNet model
 interpreter = make_interpreter(model_path)
 interpreter.allocate_tensors()
-
-
-# Define a consistent color map for the Pascal VOC classes
-COLOR_MAP = np.array([
-    [0, 0, 0],         # Background
-    [128, 0, 0],       # Aeroplane
-    [0, 128, 0],       # Bicycle
-    [128, 128, 0],     # Bird
-    [0, 0, 128],       # Boat
-    [128, 0, 128],     # Bottle
-    [0, 128, 128],     # Bus
-    [128, 128, 128],   # Car
-    [64, 0, 0],        # Cat
-    [192, 0, 0],       # Chair
-    [64, 128, 0],      # Cow
-    [192, 128, 0],     # Dining Table
-    [64, 0, 128],      # Dog
-    [192, 0, 128],     # Horse
-    [64, 128, 128],    # Motorbike
-    [192, 128, 128],   # Person
-    [0, 64, 0],        # Potted Plant
-    [128, 64, 0],      # Sheep
-    [0, 192, 0],       # Sofa
-    [128, 192, 0],     # Train
-    [0, 64, 128],      # TV/Monitor
-], dtype=np.uint8)
 
 def detect_objects(frame):
     # Resize the input frame to match the model's expected input size
@@ -55,53 +28,24 @@ def detect_objects(frame):
     # Get the output tensor and postprocess to obtain detections
     boxes = detect.get_objects(interpreter, score_threshold=0.5)
 
+    # Scale the bounding boxes back to the original frame size
+    scale_x = frame.shape[1] / input_width
+    scale_y = frame.shape[0] / input_height
+
     # Draw bounding boxes on the original frame
     for obj in boxes:
         ymin, xmin, ymax, xmax = obj.bbox
-        ymin = int(ymin * frame.shape[0] / input_height)
-        xmin = int(xmin * frame.shape[1] / input_width)
-        ymax = int(ymax * frame.shape[0] / input_height)
-        xmax = int(xmax * frame.shape[1] / input_width)
-        
+        ymin = int(ymin * scale_y)
+        xmin = int(xmin * scale_x)
+        ymax = int(ymax * scale_y)
+        xmax = int(xmax * scale_x)
+
         # Draw bounding box
         cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), (0, 255, 0), 2)
         label = f'{obj.id}: {obj.score:.2f}'
         cv2.putText(frame, label, (xmin, ymin - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
     return frame
-
-
-
-def mask_frame(frame):
-    # Resize the input frame to match the model's expected input size
-    _, input_height, input_width, _ = interpreter.get_input_details()[0]['shape']
-    resized_frame = cv2.resize(frame, (input_width, input_height))
-
-    # Set the input tensor
-    common.set_input(interpreter, resized_frame)
-
-    # Run inference
-    interpreter.invoke()
-
-    # Get the output tensor
-    result = segment.get_output(interpreter)
-
-    # Resize the result to match the original frame size
-    mask = cv2.resize(result, (frame.shape[1], frame.shape[0]), interpolation=cv2.INTER_NEAREST)
-
-    # Create an overlay for the mask using the fixed color map
-    overlay = np.zeros_like(frame, dtype=np.uint8)
-    for class_id in np.unique(mask):
-        if class_id == 0:
-            continue  # Skip the background
-        overlay[mask == class_id] = COLOR_MAP[class_id]
-
-    # Combine the original frame with the mask overlay using transparency
-    alpha = 0.4
-    masked_frame = cv2.addWeighted(overlay, alpha, frame, 1 - alpha, 0)
-
-    return masked_frame
-
 
 class VLCPlayer:
     def __init__(self, url):
@@ -143,7 +87,6 @@ class VLCPlayer:
 if __name__ == "__main__":
     os.environ['DISPLAY'] = ':0'
 
-
     url = "https://61e0c5d388c2e.streamlock.net/live/MLK_E_Cherry_NS.stream/chunklist_w1373546751.m3u8"
     player = VLCPlayer(url)
     player.start()
@@ -151,9 +94,11 @@ if __name__ == "__main__":
     while True:
         frame = player.get_frame()
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_RGBA2RGB)
-        masked_frame = mask_frame(frame_rgb)
 
-        cv2.imshow("Video Stream", masked_frame)
+        # Apply object detection
+        detected_frame = detect_objects(frame_rgb)
+
+        cv2.imshow("Video Stream", detected_frame)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
