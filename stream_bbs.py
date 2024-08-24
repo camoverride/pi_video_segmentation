@@ -26,13 +26,42 @@ COCO_LABELS = [
     'toothbrush'
 ]
 
+def resize_with_aspect_ratio(image, target_size):
+    """
+    Resize the image while keeping the aspect ratio consistent. Add padding if necessary.
+    """
+    h, w = image.shape[:2]
+    target_w, target_h = target_size
+
+    # Calculate the scaling factor
+    scale = min(target_w / w, target_h / h)
+
+    # Compute the new dimensions and padding
+    new_w = int(w * scale)
+    new_h = int(h * scale)
+    resized = cv2.resize(image, (new_w, new_h))
+
+    delta_w = target_w - new_w
+    delta_h = target_h - new_h
+
+    top, bottom = delta_h // 2, delta_h - (delta_h // 2)
+    left, right = delta_w // 2, delta_w - (delta_w // 2)
+
+    # Add padding to get the target size
+    color = [0, 0, 0]
+    resized_with_padding = cv2.copyMakeBorder(resized, top, bottom, left, right, cv2.BORDER_CONSTANT, value=color)
+    
+    return resized_with_padding, scale, (left, top)
+
 def detect_objects(frame):
-    # Resize the input frame to match the model's expected input size
+    """
+    Perform object detection on the frame and map the bounding boxes back to the original frame.
+    """
     _, input_height, input_width, _ = interpreter.get_input_details()[0]['shape']
     original_height, original_width = frame.shape[:2]
 
-    # Resize the frame to the input size for the model
-    resized_frame = cv2.resize(frame, (input_width, input_height))
+    # Resize with aspect ratio preserved
+    resized_frame, scale, (pad_x, pad_y) = resize_with_aspect_ratio(frame, (input_width, input_height))
 
     # Set the input tensor
     common.set_input(interpreter, resized_frame)
@@ -43,26 +72,22 @@ def detect_objects(frame):
     # Get the output tensor and postprocess to obtain detections
     boxes = detect.get_objects(interpreter, score_threshold=0.5)
 
-    # Calculate the scale factors between the original frame and the resized frame
-    scale_x = original_width / input_width
-    scale_y = original_height / input_height
-
     for obj in boxes:
         ymin, xmin, ymax, xmax = obj.bbox
 
-        # Debugging: Print the original bounding box coordinates
-        print(f"Original Bounding Box: ({xmin}, {ymin}), ({xmax}, {ymax})")
+        # Remove padding and scale back to original size
+        xmin = int((xmin - pad_x) / scale)
+        xmax = int((xmax - pad_x) / scale)
+        ymin = int((ymin - pad_y) / scale)
+        ymax = int((ymax - pad_y) / scale)
 
-        # Adjust the bounding box coordinates back to the original frame
-        xmin = int(xmin * scale_x)
-        xmax = int(xmax * scale_x)
-        ymin = int(ymin * scale_y)
-        ymax = int(ymax * scale_y)
+        # Ensure bounding box stays within image bounds
+        xmin = max(0, min(xmin, original_width))
+        xmax = max(0, min(xmax, original_width))
+        ymin = max(0, min(ymin, original_height))
+        ymax = max(0, min(ymax, original_height))
 
-        # Debugging: Print the scaled bounding box coordinates
-        print(f"Scaled Bounding Box: ({xmin}, {ymin}), ({xmax}, {ymax})")
-
-        # Draw the bounding box on the original frame
+        # Draw bounding box (red color, thickness 1)
         cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), (0, 0, 255), 1)
 
         # Get the label name from COCO_LABELS
