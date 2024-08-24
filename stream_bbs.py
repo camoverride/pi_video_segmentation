@@ -30,11 +30,8 @@ def detect_objects(frame):
     # Resize the input frame to match the model's expected input size
     _, input_height, input_width, _ = interpreter.get_input_details()[0]['shape']
     original_height, original_width = frame.shape[:2]
-    
-    # Compute scale factors
-    scale_x = original_width / input_width
-    scale_y = original_height / input_height
-    
+
+    # Resize the frame to the input size for the model
     resized_frame = cv2.resize(frame, (input_width, input_height))
 
     # Set the input tensor
@@ -46,18 +43,17 @@ def detect_objects(frame):
     # Get the output tensor and postprocess to obtain detections
     boxes = detect.get_objects(interpreter, score_threshold=0.5)
 
-    # Debugging: Print the input and output dimensions
-    print(f"Original Frame Size: {original_width}x{original_height}")
-    print(f"Resized Frame Size: {input_width}x{input_height}")
+    # Calculate the scale factors between the original frame and the resized frame
+    scale_x = original_width / input_width
+    scale_y = original_height / input_height
 
-    # Scale the bounding boxes back to the original frame size
     for obj in boxes:
         ymin, xmin, ymax, xmax = obj.bbox
 
         # Debugging: Print the original bounding box coordinates
         print(f"Original Bounding Box: ({xmin}, {ymin}), ({xmax}, {ymax})")
 
-        # Scale coordinates to the original image dimensions
+        # Adjust the bounding box coordinates back to the original frame
         xmin = int(xmin * scale_x)
         xmax = int(xmax * scale_x)
         ymin = int(ymin * scale_y)
@@ -66,7 +62,7 @@ def detect_objects(frame):
         # Debugging: Print the scaled bounding box coordinates
         print(f"Scaled Bounding Box: ({xmin}, {ymin}), ({xmax}, {ymax})")
 
-        # Draw bounding box (red color, thickness 1)
+        # Draw the bounding box on the original frame
         cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), (0, 0, 255), 1)
 
         # Get the label name from COCO_LABELS
