@@ -27,10 +27,9 @@ COCO_LABELS = [
 ]
 
 def detect_objects(frame):
-    original_height, original_width = frame.shape[:2]
     input_height, input_width = interpreter.get_input_details()[0]['shape'][1:3]
 
-    # Resize the image directly to the model's expected input size
+    # Resize the image to the model's expected input size
     resized_frame = cv2.resize(frame, (input_width, input_height))
 
     # Set the input tensor
@@ -42,27 +41,18 @@ def detect_objects(frame):
     # Get detected objects
     boxes = detect.get_objects(interpreter, score_threshold=0.5)
 
-    # Scale bounding boxes back to original frame size
-    scale_x = original_width / input_width
-    scale_y = original_height / input_height
-
     for obj in boxes:
         ymin, xmin, ymax, xmax = obj.bbox
 
-        xmin = int(xmin * scale_x)
-        xmax = int(xmax * scale_x)
-        ymin = int(ymin * scale_y)
-        ymax = int(ymax * scale_y)
-
-        # Draw bounding box
-        cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), (0, 0, 255), 2)
+        # Draw bounding box directly on the resized frame
+        cv2.rectangle(resized_frame, (xmin, ymin), (xmax, ymax), (0, 0, 255), 2)
 
         # Draw label
         label = COCO_LABELS[obj.id] if obj.id < len(COCO_LABELS) else 'Unknown'
         label = f'{label}: {obj.score:.2f}'
-        cv2.putText(frame, label, (xmin, ymin - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
+        cv2.putText(resized_frame, label, (xmin, ymin - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
 
-    return frame
+    return resized_frame
 
 class VLCPlayer:
     def __init__(self, url):
@@ -100,16 +90,12 @@ class VLCPlayer:
     def get_frame(self):
         return np.copy(self.frame_data)
 
-
 if __name__ == "__main__":
     os.environ['DISPLAY'] = ':0'
 
     url = "https://61e0c5d388c2e.streamlock.net/live/MLK_E_Cherry_NS.stream/chunklist_w1373546751.m3u8"
     player = VLCPlayer(url)
     player.start()
-
-    cv2.namedWindow("Video Stream", cv2.WND_PROP_FULLSCREEN)
-    cv2.setWindowProperty("Video Stream", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 
     while True:
         frame = player.get_frame()
@@ -118,6 +104,7 @@ if __name__ == "__main__":
         # Apply object detection
         detected_frame = detect_objects(frame_rgb)
 
+        # Display the resized frame with bounding boxes
         cv2.imshow("Video Stream", detected_frame)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
