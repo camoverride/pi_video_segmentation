@@ -26,75 +26,48 @@ COCO_LABELS = [
     'toothbrush'
 ]
 
-def resize_with_aspect_ratio(image, target_size):
-    """
-    Resize the image while keeping the aspect ratio consistent. Add padding if necessary.
-    """
-    h, w = image.shape[:2]
-    target_w, target_h = target_size
-
-    # Calculate the scaling factor
-    scale = min(target_w / w, target_h / h)
-
-    # Compute the new dimensions and padding
-    new_w = int(w * scale)
-    new_h = int(h * scale)
-    resized = cv2.resize(image, (new_w, new_h))
-
-    delta_w = target_w - new_w
-    delta_h = target_h - new_h
-
-    top, bottom = delta_h // 2, delta_h - (delta_h // 2)
-    left, right = delta_w // 2, delta_w - (delta_w // 2)
-
-    # Add padding to get the target size
-    color = [0, 0, 0]
-    resized_with_padding = cv2.copyMakeBorder(resized, top, bottom, left, right, cv2.BORDER_CONSTANT, value=color)
-    
-    return resized_with_padding, scale, (left, top)
-
 def detect_objects(frame):
-    """
-    Perform object detection on the frame and map the bounding boxes back to the original frame.
-    """
-    _, input_height, input_width, _ = interpreter.get_input_details()[0]['shape']
     original_height, original_width = frame.shape[:2]
+    input_height, input_width = interpreter.get_input_details()[0]['shape'][1:3]
 
-    # Resize with aspect ratio preserved
-    resized_frame, scale, (pad_x, pad_y) = resize_with_aspect_ratio(frame, (input_width, input_height))
+    # Resize while maintaining aspect ratio and adding padding if needed
+    scale = min(input_width / original_width, input_height / original_height)
+    new_width = int(original_width * scale)
+    new_height = int(original_height * scale)
+    
+    resized_frame = cv2.resize(frame, (new_width, new_height))
+
+    # Calculate padding
+    pad_x = (input_width - new_width) // 2
+    pad_y = (input_height - new_height) // 2
+
+    # Pad the resized image
+    padded_frame = cv2.copyMakeBorder(resized_frame, pad_y, pad_y, pad_x, pad_x, cv2.BORDER_CONSTANT, value=(0, 0, 0))
 
     # Set the input tensor
-    common.set_input(interpreter, resized_frame)
+    common.set_input(interpreter, padded_frame)
 
     # Run inference
     interpreter.invoke()
 
-    # Get the output tensor and postprocess to obtain detections
+    # Get detected objects
     boxes = detect.get_objects(interpreter, score_threshold=0.5)
 
     for obj in boxes:
         ymin, xmin, ymax, xmax = obj.bbox
 
-        # Remove padding and scale back to original size
-        xmin = int((xmin - pad_x) / scale)
-        xmax = int((xmax - pad_x) / scale)
-        ymin = int((ymin - pad_y) / scale)
-        ymax = int((ymax - pad_y) / scale)
+        # Undo padding and scaling to get coordinates in original image
+        xmin = max(0, int((xmin - pad_x) / scale))
+        xmax = min(original_width, int((xmax - pad_x) / scale))
+        ymin = max(0, int((ymin - pad_y) / scale))
+        ymax = min(original_height, int((ymax - pad_y) / scale))
 
-        # Ensure bounding box stays within image bounds
-        xmin = max(0, min(xmin, original_width))
-        xmax = max(0, min(xmax, original_width))
-        ymin = max(0, min(ymin, original_height))
-        ymax = max(0, min(ymax, original_height))
+        # Draw bounding box
+        cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), (0, 0, 255), 2)
 
-        # Draw bounding box (red color, thickness 1)
-        cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), (0, 0, 255), 1)
-
-        # Get the label name from COCO_LABELS
+        # Draw label
         label = COCO_LABELS[obj.id] if obj.id < len(COCO_LABELS) else 'Unknown'
         label = f'{label}: {obj.score:.2f}'
-
-        # Draw the label above the bounding box
         cv2.putText(frame, label, (xmin, ymin - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
 
     return frame
@@ -106,7 +79,7 @@ class VLCPlayer:
         self.player = self.instance.media_player_new()
         self.media = self.instance.media_new(self.url)
         self.player.set_media(self.media)
-        self.width = 640  # Set according to your stream resolution
+        self.width = 640
         self.height = 480
         self.frame_data = np.zeros((self.height, self.width, 4), dtype=np.uint8)
         self.frame_pointer = self.frame_data.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8))
@@ -143,7 +116,6 @@ if __name__ == "__main__":
     player = VLCPlayer(url)
     player.start()
 
-    # Create a named window and set it to full screen
     cv2.namedWindow("Video Stream", cv2.WND_PROP_FULLSCREEN)
     cv2.setWindowProperty("Video Stream", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 
@@ -154,7 +126,6 @@ if __name__ == "__main__":
         # Apply object detection
         detected_frame = detect_objects(frame_rgb)
 
-        # Display the frame in full screen
         cv2.imshow("Video Stream", detected_frame)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
