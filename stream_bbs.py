@@ -15,6 +15,32 @@ model_path = 'ssd_mobilenet_v2_coco_quant_postprocess_edgetpu.tflite'
 interpreter = make_interpreter(model_path)
 interpreter.allocate_tensors()
 
+
+# Define a consistent color map for the Pascal VOC classes
+COLOR_MAP = np.array([
+    [0, 0, 0],         # Background
+    [128, 0, 0],       # Aeroplane
+    [0, 128, 0],       # Bicycle
+    [128, 128, 0],     # Bird
+    [0, 0, 128],       # Boat
+    [128, 0, 128],     # Bottle
+    [0, 128, 128],     # Bus
+    [128, 128, 128],   # Car
+    [64, 0, 0],        # Cat
+    [192, 0, 0],       # Chair
+    [64, 128, 0],      # Cow
+    [192, 128, 0],     # Dining Table
+    [64, 0, 128],      # Dog
+    [192, 0, 128],     # Horse
+    [64, 128, 128],    # Motorbike
+    [192, 128, 128],   # Person
+    [0, 64, 0],        # Potted Plant
+    [128, 64, 0],      # Sheep
+    [0, 192, 0],       # Sofa
+    [128, 192, 0],     # Train
+    [0, 64, 128],      # TV/Monitor
+], dtype=np.uint8)
+
 def detect_objects(frame):
     # Resize the input frame to match the model's expected input size
     _, input_height, input_width, _ = interpreter.get_input_details()[0]['shape']
