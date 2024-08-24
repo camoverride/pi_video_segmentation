@@ -7,10 +7,8 @@ from pycoral.adapters import common, detect
 from pycoral.utils.edgetpu import make_interpreter
 
 
-# Download the model
-model_path = 'ssd_mobilenet_v2_coco_quant_postprocess_edgetpu.tflite'
-
 # Initialize the Coral Edge TPU with the SSD MobileNet model
+model_path = 'ssd_mobilenet_v2_coco_quant_postprocess_edgetpu.tflite'
 interpreter = make_interpreter(model_path)
 interpreter.allocate_tensors()
 
@@ -39,6 +37,11 @@ def detect_objects(frame):
         xmin = int(xmin * scale_x)
         ymax = int(ymax * scale_y)
         xmax = int(xmax * scale_x)
+
+        # Adjust if the image is flipped or mirrored
+        # Uncomment one of these if your boxes appear mirrored or flipped
+        # xmin, xmax = frame.shape[1] - xmax, frame.shape[1] - xmin  # Horizontal flip
+        # ymin, ymax = frame.shape[0] - ymax, frame.shape[0] - ymin  # Vertical flip
 
         # Draw bounding box
         cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), (0, 255, 0), 2)
