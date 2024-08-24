@@ -47,20 +47,20 @@ def detect_objects(frame):
     # Draw bounding boxes on the original frame
     for obj in boxes:
         ymin, xmin, ymax, xmax = obj.bbox
-        ymin = int(ymin * scale_y)
-        xmin = int(xmin * scale_x)
-        ymax = int(ymax * scale_y)
-        xmax = int(xmax * scale_x)
+
+        # Correct for flipping and mirroring
+        xmin, xmax = frame.shape[1] - xmax * scale_x, frame.shape[1] - xmin * scale_x
+        ymin, ymax = frame.shape[0] - ymax * scale_y, frame.shape[0] - ymin * scale_y
 
         # Draw bounding box (red color, thickness 1)
-        cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), (0, 0, 255), 1)
+        cv2.rectangle(frame, (int(xmin), int(ymin)), (int(xmax), int(ymax)), (0, 0, 255), 1)
 
         # Get the label name from COCO_LABELS
         label = COCO_LABELS[obj.id] if obj.id < len(COCO_LABELS) else 'Unknown'
         label = f'{label}: {obj.score:.2f}'
 
         # Draw the label above the bounding box
-        cv2.putText(frame, label, (xmin, ymin - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
+        cv2.putText(frame, label, (int(xmin), int(ymin) - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
 
     return frame
 
@@ -108,6 +108,10 @@ if __name__ == "__main__":
     player = VLCPlayer(url)
     player.start()
 
+    # Create a named window and set it to full screen
+    cv2.namedWindow("Video Stream", cv2.WND_PROP_FULLSCREEN)
+    cv2.setWindowProperty("Video Stream", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+
     while True:
         frame = player.get_frame()
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_RGBA2RGB)
@@ -115,6 +119,7 @@ if __name__ == "__main__":
         # Apply object detection
         detected_frame = detect_objects(frame_rgb)
 
+        # Display the frame in full screen
         cv2.imshow("Video Stream", detected_frame)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
