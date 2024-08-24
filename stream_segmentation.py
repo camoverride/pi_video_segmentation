@@ -14,6 +14,32 @@ interpreter = make_interpreter(model_path)
 interpreter.allocate_tensors()
 
 
+# Define a consistent color map for the Pascal VOC classes
+COLOR_MAP = np.array([
+    [0, 0, 0],         # Background
+    [128, 0, 0],       # Aeroplane
+    [0, 128, 0],       # Bicycle
+    [128, 128, 0],     # Bird
+    [0, 0, 128],       # Boat
+    [128, 0, 128],     # Bottle
+    [0, 128, 128],     # Bus
+    [128, 128, 128],   # Car
+    [64, 0, 0],        # Cat
+    [192, 0, 0],       # Chair
+    [64, 128, 0],      # Cow
+    [192, 128, 0],     # Dining Table
+    [64, 0, 128],      # Dog
+    [192, 0, 128],     # Horse
+    [64, 128, 128],    # Motorbike
+    [192, 128, 128],   # Person
+    [0, 64, 0],        # Potted Plant
+    [128, 64, 0],      # Sheep
+    [0, 192, 0],       # Sofa
+    [128, 192, 0],     # Train
+    [0, 64, 128],      # TV/Monitor
+], dtype=np.uint8)
+
+
 def mask_frame(frame):
     # Resize the input frame to match the model's expected input size
     _, input_height, input_width, _ = interpreter.get_input_details()[0]['shape']
@@ -31,16 +57,12 @@ def mask_frame(frame):
     # Resize the result to match the original frame size
     mask = cv2.resize(result, (frame.shape[1], frame.shape[0]), interpolation=cv2.INTER_NEAREST)
 
-    # Define colors for different object classes (for demonstration, random colors are used)
-    colors = np.random.randint(0, 255, size=(256, 3), dtype=np.uint8)
-
-    # Create an overlay for the mask
+    # Create an overlay for the mask using the fixed color map
     overlay = np.zeros_like(frame, dtype=np.uint8)
     for class_id in np.unique(mask):
         if class_id == 0:
             continue  # Skip the background
-        color = colors[class_id]
-        overlay[mask == class_id] = color
+        overlay[mask == class_id] = COLOR_MAP[class_id]
 
     # Combine the original frame with the mask overlay using transparency
     alpha = 0.4
